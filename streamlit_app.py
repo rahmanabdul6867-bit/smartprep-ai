@@ -5,7 +5,6 @@ import re
 from io import BytesIO
 from pypdf import PdfReader
 from docx import Document
-#from pptx import Presentation
 
 # Page configuration
 st.set_page_config(
@@ -43,8 +42,8 @@ st.markdown("""
     .stButton button {
         background: #3b82f6;
         color: white;
-        border-radius: 55px;
-        padding: 10px 15px;
+        border-radius: 25px;
+        padding: 8px 20px;
     }
     .stTextInput input {
         background: rgba(255,255,255,0.07);
@@ -57,7 +56,7 @@ st.markdown("""
 # Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "ai", "content": "Hello! I'm SmartPrep AI. Upload your PDF, DOC, PPT files and I will extract text from them. Ask me questions about the content. Choose a mode above to customize your study experience."}
+        {"role": "ai", "content": "Hello! I'm SmartPrep AI. Upload your PDF, DOC files and I will extract text from them. Ask me questions about the content. Choose a mode above to customize your study experience."}
     ]
 
 if "current_mode" not in st.session_state:
@@ -76,7 +75,6 @@ if "process_button_text" not in st.session_state:
 with st.sidebar:
     st.markdown("## Study Mode")
     
-    # Display current mode
     mode_display = {
         "exam": "📝 Exam Prep",
         "topic": "📚 Topic Prep", 
@@ -106,7 +104,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("## Upload Document")
     
-    uploaded_file = st.file_uploader("Upload PDF, DOCX, file", type=['pdf', 'docx', 'txt'])
+    uploaded_file = st.file_uploader("Upload PDF, DOCX, or TXT file", type=['pdf', 'docx', 'txt'])
     
     if uploaded_file is not None:
         if st.button(st.session_state.process_button_text, use_container_width=True):
@@ -116,7 +114,6 @@ with st.sidebar:
                 
                 try:
                     if file_extension == 'pdf':
-                        # Use pypdf (works on Streamlit Cloud)
                         pdf_reader = PdfReader(uploaded_file)
                         for page in pdf_reader.pages:
                             extracted_text += page.extract_text() + "\n"
@@ -128,13 +125,6 @@ with st.sidebar:
                         doc = Document(BytesIO(uploaded_file.read()))
                         for para in doc.paragraphs:
                             extracted_text += para.text + "\n"
-                    
-                   elif file_extension == 'pptx':
-                       st.session_state.messages.append({
-                       "role": "ai",
-                       "content": "⚠️ PPTX support is currently disabled. Please upload PDF, DOCX, or TXT files instead."
-                      })
-                      extracted_text = ""
                     
                     if extracted_text and len(extracted_text) > 50:
                         st.session_state.uploaded_file_content = extracted_text
@@ -151,7 +141,7 @@ with st.sidebar:
                             "role": "ai",
                             "content": f"Could not extract text from '{uploaded_file.name}'. The file may be image-based or encrypted. Try a text-based PDF or TXT file."
                         })
-                    
+                
                 except Exception as e:
                     st.session_state.messages.append({
                         "role": "ai",
@@ -178,7 +168,6 @@ for message in st.session_state.messages:
     else:
         st.markdown(f'<div class="chat-message-ai">{message["content"]}</div>', unsafe_allow_html=True)
 
-# Generate response by extracting EXACT content from PDF with mode-specific formatting
 def generate_response(user_question, mode, file_content, file_name):
     
     if not file_content or len(file_content) < 50:
@@ -186,18 +175,15 @@ def generate_response(user_question, mode, file_content, file_name):
     
     question_lower = user_question.lower()
     
-    # Split into sentences
     sentences = re.split(r'[.!?]+', file_content)
     sentences = [s.strip() for s in sentences if len(s.strip()) > 30]
     
-    # Extract keywords from question
     stop_words = ['what', 'is', 'are', 'the', 'a', 'an', 'of', 'to', 'in', 'for', 'on', 'with', 'by', 'at', 'from', 'this', 'that', 'these', 'those', 'and', 'or', 'but', 'so', 'because', 'if', 'then', 'else', 'when', 'where', 'which', 'who', 'whom', 'whose', 'why', 'how']
     keywords = [w for w in question_lower.split() if w not in stop_words and len(w) > 2]
     
     if not keywords:
         keywords = question_lower.split()[:3]
     
-    # Find sentences containing keywords
     matching_sentences = []
     for sentence in sentences:
         sentence_lower = sentence.lower()
@@ -211,10 +197,8 @@ def generate_response(user_question, mode, file_content, file_name):
                 "matches": match_count
             })
     
-    # Sort by relevance
     matching_sentences.sort(key=lambda x: x["matches"], reverse=True)
     
-    # Mode-specific response formatting
     mode_prefixes = {
         "exam": "📝 **Exam Prep Mode:**\n\n",
         "topic": "📚 **Topic Prep Mode:**\n\n",
@@ -230,7 +214,6 @@ def generate_response(user_question, mode, file_content, file_name):
     prefix = mode_prefixes.get(mode, "📝 **Response:**\n\n")
     instruction = mode_instruction.get(mode, "")
     
-    # Handle different question types with mode-specific responses
     if "summar" in question_lower or "summary" in question_lower:
         summary = ". ".join(sentences[:10])
         
@@ -238,7 +221,7 @@ def generate_response(user_question, mode, file_content, file_name):
             return f"{prefix}📋 **Exam Summary of '{file_name}':**\n\n{summary}...{instruction.replace('Focus on', 'Key exam')}"
         elif mode == "topic":
             return f"{prefix}📖 **Detailed Summary of '{file_name}':**\n\n{summary}...{instruction}"
-        else:  # brushup
+        else:
             return f"{prefix}⚡ **Quick Summary of '{file_name}':**\n\n{summary[:500]}...{instruction}"
     
     elif "key point" in question_lower or "important" in question_lower or "main" in question_lower:
@@ -308,7 +291,6 @@ def generate_response(user_question, mode, file_content, file_name):
 # Chat input
 st.markdown("---")
 
-# Use form for auto-clear
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input(
         "Ask a question about your document...",
@@ -319,10 +301,8 @@ with st.form(key="chat_form", clear_on_submit=True):
     submit_button = st.form_submit_button("Send", use_container_width=False)
     
     if submit_button and user_input:
-        # Add user message
         st.session_state.messages.append({"role": "user", "content": user_input})
         
-        # Generate AI response
         if st.session_state.uploaded_file_content:
             response = generate_response(
                 user_input,
@@ -333,6 +313,5 @@ with st.form(key="chat_form", clear_on_submit=True):
         else:
             response = "Please upload a document first using the sidebar. Once uploaded, I can answer questions based on its content."
         
-        # Add AI response
         st.session_state.messages.append({"role": "ai", "content": response})
         st.rerun()
