@@ -130,11 +130,11 @@ with st.sidebar:
                             extracted_text += para.text + "\n"
                     
                    elif file_extension == 'pptx':
-    st.session_state.messages.append({
-        "role": "ai",
-        "content": "⚠️ PPTX support is currently disabled. Please upload PDF, DOCX, or TXT files instead."
-    })
-    extracted_text = ""
+                       st.session_state.messages.append({
+                       "role": "ai",
+                       "content": "⚠️ PPTX support is currently disabled. Please upload PDF, DOCX, or TXT files instead."
+                      })
+                      extracted_text = ""
                     
                     if extracted_text and len(extracted_text) > 50:
                         st.session_state.uploaded_file_content = extracted_text
