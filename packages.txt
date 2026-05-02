@@ -1,5 +1,7 @@
-libz-dev
-pkg-config
+libjpeg-dev
+zlib1g-dev
+libpng-dev
+libtiff-dev
 gcc
 g++
 make
