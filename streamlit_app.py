@@ -5,7 +5,7 @@ import re
 from io import BytesIO
 from pypdf import PdfReader
 from docx import Document
-from pptx import Presentation
+#from pptx import Presentation
 
 # Page configuration
 st.set_page_config(
@@ -106,7 +106,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("## Upload Document")
     
-    uploaded_file = st.file_uploader("Upload PDF, DOCX, or PPTX file", type=['pdf', 'docx', 'pptx', 'txt'])
+    uploaded_file = st.file_uploader("Upload PDF, DOCX, file", type=['pdf', 'docx', 'txt'])
     
     if uploaded_file is not None:
         if st.button(st.session_state.process_button_text, use_container_width=True):
@@ -129,12 +129,12 @@ with st.sidebar:
                         for para in doc.paragraphs:
                             extracted_text += para.text + "\n"
                     
-                    elif file_extension == 'pptx':
-                        prs = Presentation(BytesIO(uploaded_file.read()))
-                        for slide in prs.slides:
-                            for shape in slide.shapes:
-                                if hasattr(shape, "text"):
-                                    extracted_text += shape.text + "\n"
+                   elif file_extension == 'pptx':
+    st.session_state.messages.append({
+        "role": "ai",
+        "content": "⚠️ PPTX support is currently disabled. Please upload PDF, DOCX, or TXT files instead."
+    })
+    extracted_text = ""
                     
                     if extracted_text and len(extracted_text) > 50:
                         st.session_state.uploaded_file_content = extracted_text
